@@ -3,6 +3,7 @@ require 'rubygems'
 require 'test/unit'
 require 'tether'
 
+# TODO: come up with a good mock object for these tests
 class TestActiveRequest < Test::Unit::TestCase
 	def setup
 		@t = Tether::Request.new('http://plcoapp/anthro/api/v1')
