@@ -1,36 +1,30 @@
 require 'rubygems'
 require 'rest_client'
+require 'digest'
 require 'json'
 
 module Tether
 	# a chainable request object
 	class Request
 		attr_reader :base_url, :params
+		attr_accessor :generate_sig
 
 		def initialize(url, params={})
 			@base_url, @params, = url, params
 
 			@url_parts = []
 
-			@brokers = {
-				:get    => Proc.new { |url, p| RestClient.get    url, :params => p },
-				:post   => Proc.new { |url, p| RestClient.post   url, p },
-				:put    => Proc.new { |url, p| RestClient.put    url, p },
-				:delete => Proc.new { |url, p| RestClient.delete url, :params => p },
-			}
+			@generate_sig = true
 		end
 
 
 		def method_missing(meth, *args)
-			#@url += "/#{meth}"
-
 			@url_parts << meth
 
 			if meth && args.count == 1 && args.first.is_a?(Hash)
 				@params.merge!(args.first)
 			else
 				if args.count > 0
-					#@url += "/#{args.join("/")}"
 					args.each { |arg| @url_parts << arg }
 				end
 			end
@@ -47,13 +41,16 @@ module Tether
 
 		private
 
-		def gen_url(*parts)
-			@cache ||= {}
-			parts.flatten!
+		def gen_sig(url)
+			Digest::SHA2.new(256).hexdigest(url)	
+		end
 
-			key = parts.join('_')
-			@cache[key] ||= parts.join('/')
-			@cache[key]
+		def gen_url(*parts)
+			parts.flatten.join('/')
+		end
+
+		def reset_url
+			@url_parts = []
 		end
 
 		def method(verb, params)
@@ -68,8 +65,16 @@ module Tether
 			# generate cache key from url and params
 			key = :"#{key}#{url}#{@params.keys.map { |k| "#{k}#{@params[k]}" }.join('')}"
 
-			res = @cache[key] ||= JSON.parse(@brokers[verb].call url, @params)
-			@url_parts = [] # reset @url_parts
+			req = RestClient::Request.new(:method => verb, :url => url, :headers => { :params => @params })
+			sig_url = req.process_url_params(url, :params => @params)
+			if @generate_sig
+				sig = gen_sig sig_url
+				@params.merge! :sig => sig
+				req = RestClient::Request.new(:method => verb, :url => url, :headers => { :params => @params })
+			end
+
+			res = @cache[key] ||= JSON.parse(req.execute)
+			reset_url
 
 			res
 		end
