@@ -61,6 +61,7 @@ module Tether
 			@params.merge! params
 
 			url = gen_url @base_url, @url_parts
+			reset_url
 
 			# generate cache key from url and params
 			key = :"#{key}#{url}#{@params.keys.map { |k| "#{k}#{@params[k]}" }.join('')}"
@@ -74,7 +75,6 @@ module Tether
 			end
 
 			res = @cache[key] ||= JSON.parse(req.execute)
-			reset_url
 
 			res
 		end
