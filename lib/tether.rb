@@ -1,7 +1,10 @@
 require 'rubygems'
 require 'rest_client'
+require 'net/http'
 require 'digest'
 require 'json'
+require 'cgi'
+require 'uri'
 
 module Tether
 	# a chainable request object
@@ -32,7 +35,8 @@ module Tether
 			self
 		end
 
-		def url; gen_url @base_url, @url_parts; end
+		def url; gen_url path(@base_url, @url_parts), @params; end
+		def sig; gen_sig url; end
 
 		def get(params={});    method :get,    params; end
 		def post(params={});   method :post,   params; end
@@ -42,10 +46,25 @@ module Tether
 		private
 
 		def gen_sig(url)
-			Digest::SHA2.new(256).hexdigest(url)	
+			Digest::SHA2.new(256).hexdigest(url)
 		end
 
-		def gen_url(*parts)
+		def gen_url(path, params={})
+			if params.empty?
+				path
+			else
+				"#{path}?#{query_string(params)}"
+			end
+		end
+
+		def query_string(params)
+			params.keys.map { |k| k.to_s }.sort.map do |k|
+				v = params[k.to_sym]
+				"#{k.to_s}=#{CGI::escape(v.to_s)}"
+			end.join('&')
+		end
+
+		def path(*parts)
 			parts.flatten.join('/')
 		end
 
@@ -60,20 +79,16 @@ module Tether
 
 			@params.merge! params
 
-			url = gen_url @base_url, @url_parts
+			url = gen_url path(@base_url, @url_parts)
 			reset_url
 
 			# generate cache key from url and params
 			key = :"#{key}#{url}#{@params.keys.map { |k| "#{k}#{@params[k]}" }.join('')}"
 
-			req = RestClient::Request.new(:method => verb, :url => url, :headers => { :params => @params })
-			sig_url = req.process_url_params(url, :params => @params)
-			if @generate_sig
-				sig = gen_sig sig_url
-				@params.merge! :sig => sig
-				req = RestClient::Request.new(:method => verb, :url => url, :headers => { :params => @params })
-			end
-
+			sig = gen_sig(gen_url url, @params)
+			params = @generate_sig ? @params.merge(:sig => sig) : @params
+			
+			req = RestClient::Request.new(:method => verb, :url => url, :headers => { :params => params })
 			res = @cache[key] ||= JSON.parse(req.execute)
 
 			res

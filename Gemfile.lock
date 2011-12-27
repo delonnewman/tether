@@ -8,9 +8,21 @@ GEM
       rake
     json (1.6.1)
     mime-types (1.17.2)
+    rack (1.3.5)
+    rack-protection (1.1.4)
+      rack
+    rack-test (0.6.1)
+      rack (>= 1.0)
     rake (0.9.2)
     rest-client (1.6.7)
       mime-types (>= 1.16)
+    sinatra (1.3.1)
+      rack (~> 1.3, >= 1.3.4)
+      rack-protection (~> 1.1, >= 1.1.2)
+      tilt (~> 1.3, >= 1.3.3)
+    sinatra-rest-service-auth (0.2.0)
+      sinatra
+    tilt (1.3.3)
 
 PLATFORMS
   ruby
@@ -19,4 +31,7 @@ DEPENDENCIES
   bundler (~> 1.0.0)
   jeweler (~> 1.6.4)
   json (= 1.6.1)
+  rack-test
   rest-client
+  sinatra
+  sinatra-rest-service-auth (= 0.2.0)
