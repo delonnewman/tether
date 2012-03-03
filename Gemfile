@@ -1,4 +1,4 @@
-source 'http://plcoapp'
+source :rubygems
 
 gem 'json', '1.6.1'
 gem 'rest-client', :require => 'rest_client'
@@ -9,7 +9,7 @@ group :development do
 end
 
 group :test do
-	gem 'rack-test'
-	gem 'sinatra'
-	gem 'sinatra-rest-service-auth', '0.2.0', :require => 'sinatra/rest-service-auth'
+  gem 'rack-test'
+  gem 'sinatra'
+  gem 'sinatra-rest-service-auth', '0.2.0', :require => 'sinatra/rest-service-auth'
 end
